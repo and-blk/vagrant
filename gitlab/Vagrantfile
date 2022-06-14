@@ -1,4 +1,4 @@
-MAGE_NAME = "generic/ubuntu2004"
+IMAGE_NAME = "generic/ubuntu2004"
 CLIENT_NODE_NUMBER = 1
 PROVIDER = "virtualbox"
 
