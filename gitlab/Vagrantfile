@@ -1,0 +1,24 @@
+MAGE_NAME = "generic/ubuntu2004"
+CLIENT_NODE_NUMBER = 1
+PROVIDER = "virtualbox"
+
+Vagrant.configure("2") do |config|
+    # config.ssh.insert_key = false
+
+    config.vm.provider PROVIDER do |v|
+        v.memory = 4096
+        v.cpus = 2
+    end
+
+    config.vm.define "gitlab" do |gitlab|
+        gitlab.vm.boot_timeout = 300
+        gitlab.vm.box = IMAGE_NAME
+        gitlab.vm.network "public_network", ip: "192.168.0.8", bridge: "wlp2s0"
+        gitlab.vm.hostname = "controleplain"
+        gitlab.vm.synced_folder ".", "/vagrant", disabled: true
+        gitlab.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
+        gitlab.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
+        gitlab.vm.provision "shell", path: "configure_gitlab.sh"
+    end
+      
+end
