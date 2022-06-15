@@ -11,14 +11,15 @@ Vagrant.configure("2") do |config|
     end
 
     config.vm.define "gitlab" do |gitlab|
+        GITLAB_IP = "192.168.0.8"
+        GITLAB_URL = "gitlab.local.com"
         gitlab.vm.boot_timeout = 300
         gitlab.vm.box = IMAGE_NAME
-        gitlab.vm.network "public_network", ip: "192.168.0.8", bridge: "wlp2s0"
+        gitlab.vm.network "public_network", ip: GITLAB_IP, bridge: "wlp2s0"
         gitlab.vm.hostname = "controleplain"
         gitlab.vm.synced_folder ".", "/vagrant", disabled: true
         gitlab.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
         gitlab.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
-        gitlab.vm.provision "shell", path: "configure_gitlab.sh"
+        gitlab.vm.provision "shell", path: "configure_gitlab.sh", args: [GITLAB_IP, GITLAB_URL]
     end
-      
 end
