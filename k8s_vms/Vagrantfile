@@ -1,6 +1,6 @@
 IMAGE_NAME = "generic/ubuntu2004"
 # IMAGE_VERSION = "1.0.282"
-CLIENT_NODE_NUMBER = 1
+CLIENT_NODE_NUMBER = 3
 PROVIDER = "virtualbox"
 
 Vagrant.configure("2") do |config|
@@ -14,10 +14,10 @@ Vagrant.configure("2") do |config|
     config.vm.define "controleplain" do |master|
         master.vm.boot_timeout = 300
         master.vm.box = IMAGE_NAME
-        master.vm.network "public_network", ip: "192.168.0.10", bridge: "wlp2s0", dev: "wlp2s0"
+        master.vm.network "public_network", ip: "192.168.0.110", bridge: "wlp2s0", dev: "wlp2s0"
         master.vm.hostname = "controleplain"
         master.vm.synced_folder ".", "/vagrant", disabled: true
-        master.vm.provision "file", source: "./temp/sshkey.pub", destination: "./sshkey.pub"
+        master.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
         #master.vm.provision "shell", path: "create_user.sh"
     end
 
@@ -28,9 +28,9 @@ Vagrant.configure("2") do |config|
             node.vm.synced_folder ".", "/vagrant", disabled: true
             # node.vm.box_version = IMAGE_VERSION
             # node.vm.network "public_network", ip: "192.168.50.#{i + 10}", bridge: "Hyper-V Virtual Ethernet Adapter"
-            node.vm.network "public_network", ip: "192.168.0.#{i + 10}", bridge: "wlp2s0", dev: "wlp2s0"
+            node.vm.network "public_network", ip: "192.168.0.#{i + 110}", bridge: "wlp2s0", dev: "wlp2s0"
             node.vm.hostname = "node-#{i}"
-            node.vm.provision "file", source: "./temp/sshkey.pub", destination: "./sshkey.pub"
+            node.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
             #node.vm.provision "shell", path: "create_user.sh"
             node.vm.provider PROVIDER do |nodevm|
               nodevm.memory = 1024

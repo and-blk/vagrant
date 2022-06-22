@@ -18,3 +18,8 @@ build-%: sshkeys ## Build VMs with config from build-**folder_name**
 destroy-%: ## Destroy VMs with config from destroy-**folder_name**
 	cd $* \
 	&& sudo vagrant destroy --force
+
+.PHONY: ssh-%
+ssh-%:
+	cd $* \
+	&& sudo vagrant ssh $(vm)
