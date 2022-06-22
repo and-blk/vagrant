@@ -23,3 +23,8 @@ destroy-%: ## Destroy VMs with config from destroy-**folder_name**
 ssh-%:
 	cd $* \
 	&& sudo vagrant ssh $(vm)
+
+.PHONY: halt-%
+halt-%:
+	cd $* \
+	&& sudo vagrant halt
