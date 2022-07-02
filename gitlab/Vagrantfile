@@ -21,6 +21,7 @@ Vagrant.configure("2") do |config|
         gitlab.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
         gitlab.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
         gitlab.vm.provision "shell", path: "configure_gitlab.sh", args: [GITLAB_IP, GITLAB_URL]
-	gitlab.vm.provision "shell", path: "../common_scripts/user.sh"
+	    gitlab.vm.provision "shell", path: "../common_scripts/user.sh"
+        gitlab.vm.provision "shell", path: "../common_scripts/dns_config.sh"
     end
 end
