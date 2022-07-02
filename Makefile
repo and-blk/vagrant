@@ -20,11 +20,21 @@ destroy-%: ## Destroy VMs with config from destroy-**folder_name**
 	&& sudo vagrant destroy --force
 
 .PHONY: ssh-%
-ssh-%:
+ssh-%: ## SSH to vm by vm name. Example: make ssh-k8s_vms vm=controleplain
 	cd $* \
 	&& sudo vagrant ssh $(vm)
 
 .PHONY: halt-%
-halt-%:
+halt-%: ## Poweroff vms in folder. Example: make halt-k8s_vms
 	cd $* \
 	&& sudo vagrant halt
+
+.PHONY: snap-%
+snap-%: ## Create snapshot for all vms in folder
+	cd $* \
+	&& sudo vagrant snapshot push
+
+.PHONY: restore-%
+restore-%: ## Restore to the snapshot all vms in folder
+	cd $* \
+	&& sudo vagrant snapshot pop --no-delete
