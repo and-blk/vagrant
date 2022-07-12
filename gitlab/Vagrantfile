@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
     end
 
     config.vm.define "gitlab" do |gitlab|
-        GITLAB_IP = "192.168.0.199"
+        GITLAB_IP = "192.168.166.199"
         GITLAB_URL = "gitlab.local.com"
         gitlab.vm.boot_timeout = 300
         gitlab.vm.box = IMAGE_NAME
