@@ -1,0 +1,76 @@
+IMAGE_NAME = "generic/oracle8"
+WORKER_NODE_NUMBER = 3
+DB_NODE_NUMBER = 2
+CONTROL_NODE_NUMBER = 3
+PROVIDER = "virtualbox"
+
+Vagrant.configure("2") do |config|
+    # config.ssh.insert_key = false
+
+    config.vm.provider PROVIDER do |v|
+        v.memory = 4096
+        v.cpus = 2
+    end
+
+    (1..CONTROL_NODE_NUMBER).each do |i|
+        config.vm.define "control-plane-#{i}" do |node|
+            node.vm.boot_timeout = 300
+            node.vm.box = IMAGE_NAME
+            node.vm.synced_folder ".", "/vagrant", disabled: true
+            node.vm.network "public_network", ip: "192.168.166.#{i + 150}", bridge: "enp37s0", dev: "enp37s0"
+            node.vm.hostname = "control-plane-#{i}"
+            node.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
+            node.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
+            node.vm.provision "shell", path: "../common_scripts/user.sh"
+            node.vm.provision "shell", path: "../common_scripts/dns_config.sh"
+            node.vm.provider PROVIDER do |nodevm|
+              nodevm.memory = 2048
+              nodevm.cpus = 2
+            end
+        end
+    end
+
+    (1..WORKER_NODE_NUMBER).each do |i|
+        config.vm.define "worker-#{i}" do |node|
+            node.vm.boot_timeout = 300
+            node.vm.box = IMAGE_NAME
+            node.vm.synced_folder ".", "/vagrant", disabled: true
+            node.vm.network "public_network", ip: "192.168.166.#{i + 160}", bridge: "enp37s0", dev: "enp37s0"
+            node.vm.hostname = "worker-#{i}"
+            node.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
+            node.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
+            node.vm.provision "shell", path: "../common_scripts/user.sh"
+            node.vm.provision "shell", path: "../common_scripts/dns_config.sh"
+            node.vm.provider PROVIDER do |nodevm|
+              nodevm.memory = 1024
+              nodevm.cpus = 1
+            end
+        end
+    end
+
+    (1..DB_NODE_NUMBER).each do |i|
+        config.vm.define "db-#{i}" do |node|
+            node.vm.boot_timeout = 300
+            node.vm.box = IMAGE_NAME
+            node.vm.synced_folder ".", "/vagrant", disabled: true
+            node.vm.network "public_network", ip: "192.168.166.#{i + 170}", bridge: "enp37s0", dev: "enp37s0"
+            node.vm.hostname = "db-#{i}"
+            node.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
+            node.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
+            node.vm.provision "shell", path: "../common_scripts/user.sh"
+            node.vm.provision "shell", path: "../common_scripts/dns_config.sh"
+            node.vm.provider PROVIDER do |nodevm|
+              nodevm.memory = 1024
+              nodevm.cpus = 1
+            end
+        end
+    end
+end
+
+# Vagrant.configure("2") do |config|
+#   config.ans.box = "precise64"
+
+#   config.ans.provision :host_shell do |host_shell|
+#     host_shell.inline = './ansible-config.sh'
+#   end
+# end

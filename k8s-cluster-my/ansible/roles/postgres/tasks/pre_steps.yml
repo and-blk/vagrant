@@ -1,0 +1,79 @@
+---
+- name: Pre steps - install required packages
+  ansible.builtin.yum:
+    name:
+      - ca-certificates
+      - curl
+      - python3-pip
+      - iproute-tc
+      - bash-completion
+      - python3-devel
+      - libpq-devel
+      - gcc
+    state: latest
+    update_cache: true
+  tags:
+    - skip_ansible_lint
+
+- name: Pre steps - install postgres repo
+  ansible.builtin.yum:
+    name: "{{ postgres_repo_proxy }}reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+    state: present
+    disablerepo: "pg*"
+    disable_gpg_check: true
+
+- name: Pre steps - replase repo url
+  ansible.builtin.replace:
+    path: /etc/yum.repos.d/pgdg-redhat-all.repo
+    regexp: 'https://download.postgresql.org/pub/repos/yum/'
+    replace: "{{ postgres_repo_proxy }}"
+
+- name: Pre steps - disable gpg check
+  ansible.builtin.replace:
+    path: /etc/yum.repos.d/pgdg-redhat-all.repo
+    regexp: '^gpgcheck=1'
+    replace: 'gpgcheck=0'
+
+- name: Pre steps - disable repo gpg check
+  ansible.builtin.replace:
+    path: /etc/yum.repos.d/pgdg-redhat-all.repo
+    regexp: '^repo_gpgcheck = 1'
+    replace: 'repo_gpgcheck = 0'
+
+- name: Pre steps - disable postgres module
+  command: yum module disable postgresql -y  # noqa: command-instead-of-module
+  register: module
+  changed_when:
+    - '"Nothing to do." not in module.stdout'
+
+- name: Pre steps - install packages
+  ansible.builtin.yum:
+    disablerepo: "pgdg*"
+    enablerepo: pgdg14
+    update_cache: true
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - postgresql14-server
+      - postgresql14
+      - postgresql14-devel
+
+- name: Pre steps - install patroni
+  ansible.builtin.pip:
+    name: "{{ item }}"
+  with_items:
+    - patroni[etcd]==2.1.5
+    - psycopg2==2.9.5
+  environment:
+    PATH: "/usr/pgsql-14/bin/:{{ ansible_env.PATH }}"
+
+- name: Pre steps - slave IP tasks
+  include_tasks: slave_ip.yml
+  when:
+    - '"slave" in host_role'
+
+- name: Pre steps - master IP tasks
+  include_tasks: master_ip.yml
+  when:
+    - '"master" in host_role'

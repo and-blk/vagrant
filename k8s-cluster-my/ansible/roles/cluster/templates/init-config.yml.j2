@@ -1,0 +1,32 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: {{ ansible_eth1.ipv4.address }}
+  bindPort: 6443
+nodeRegistration:
+  criSocket: unix:///var/run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+  name: {{ ansible_hostname }}
+---
+apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta3
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager:
+  extraArgs:
+    node-monitor-period: 4s
+    node-monitor-grace-period: 10s
+dns: {}
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: {{ docker_repo }}
+kind: ClusterConfiguration
+controlPlaneEndpoint: "{{ ansible_eth1.ipv4.address }}:6443"
+kubernetesVersion: {{ k8s_version.major }}
+networking:
+  dnsDomain: cluster.local
+  podSubnet: "{{ network_cidr }}"
+scheduler: {}

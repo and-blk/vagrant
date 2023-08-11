@@ -1,0 +1,116 @@
+---
+- name: Configure - create patroni service
+  ansible.builtin.template:
+    src: patroni.service.j2
+    dest: /etc/systemd/system/patroni.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Configure - create patroni config file
+  ansible.builtin.template:
+    src: patroni.yml.j2
+    dest: /etc/patroni.yml
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Handlers - restart patroni
+
+- name: Configure - flush all handlers
+  meta: flush_handlers
+
+# - name: Configure - initdb
+#   become: true
+#   become_method: sudo
+#   become_user: postgres
+#   command: /usr/pgsql-14/bin/initdb -D /var/lib/pgsql/14/data
+#   when:
+#     - '"master" in host_role'
+
+# - name: Configure - manage master postgresql.conf
+#   lineinfile:
+#     path: /var/lib/pgsql/14/data/postgresql.conf
+#     regexp: "^#?{{ item.option_name }}"
+#     line: "{{ item.option_name }} = {{ item.value }}"
+#   with_items:
+#     - option_name: listen_addresses
+#       value: "{{ postgres.listen_addresses }}"
+#     - option_name: port
+#       value: "{{ postgres.port }}"
+#     - option_name: max_connections
+#       value: "{{ postgres.max_connections }}"
+#     - option_name: max_wal_senders
+#       value: "5"
+#     - option_name: wal_level
+#       value: "hot_standby"
+#     - option_name: promote_trigger_file
+#       value: "'primary.signal'"
+#     - option_name: wal_log_hints
+#       value: "on"
+#   when:
+#     - '"master" in host_role'
+
+# - name: Configure - manage pg_hba.conf for master
+#   ansible.builtin.blockinfile:
+#     marker: "## Replication access management by ansible ##"
+#     path: /var/lib/pgsql/14/data/pg_hba.conf
+#     block: |
+#       host    replication             {{ postgres.replication.username }}             {{ slave_ip }}/32            trust
+#       host    replication             {{ postgres.replication.username }}             {{ master_ip }}/32            trust
+#   when:
+#     - '"master" in host_role'
+#   notify:
+#     - Handlers - restart postgresql
+
+# - name: Configure - flush all handlers
+#   meta: flush_handlers
+
+# - name: Configure - create replication user
+#   become_user: postgres
+#   command: psql -c "CREATE ROLE {{ postgres.replication.username }} WITH REPLICATION PASSWORD '{{ postgres.replication.password }}' LOGIN;"
+#   when:
+#     - '"master" in host_role'
+
+# - name: Configure - change default password
+#   become_user: postgres
+#   command: psql -c "ALTER USER postgres WITH ENCRYPTED PASSWORD '{{ postgres.password }}';"
+#   when:
+#     - '"master" in host_role'
+
+# - name: Configure - do basebackup to replica
+#   become_user: postgres
+#   command: pg_basebackup -h "{{ master_ip }}" -U repuser --checkpoint=fast -D /var/lib/pgsql/14/data/ -R --slot=replication_slot -C
+#   when:
+#     - '"slave" in host_role'
+
+# - name: Configure - manage access in pg_hba.conf
+#   ansible.builtin.blockinfile:
+#     marker: "## K8S nodes access management by ansible ##"
+#     path: /var/lib/pgsql/14/data/pg_hba.conf
+#     block: |
+#       {% for _host in ansible_play_hosts_all %}
+#       host    all             all             {{ hostvars[_host].ansible_eth1.ipv4.address }}/32            md5
+#       {% endfor %}
+#   notify:
+#     - Handlers - restart postgresql
+
+# - name: Configure - manage postgresql.conf for slave
+#   lineinfile:
+#     path: /var/lib/pgsql/14/data/postgresql.conf
+#     regexp: "^#?{{ item.option_name }}"
+#     line: "{{ item.option_name }} = {{ item.value }}"
+#   with_items:
+#     - option_name: synchronous_commit
+#       value: "remote_apply"
+#     - option_name: synchronous_standby_names
+#       value: "'*'"
+#     - option_name: wal_log_hints
+#       value: "on"
+#   when:
+#     - '"master" in host_role'
+#   notify:
+#     - Handlers - restart postgresql
+
+# - name: Configure - flush all handlers
+#   meta: flush_handlers

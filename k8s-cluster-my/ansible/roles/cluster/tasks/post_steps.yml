@@ -1,0 +1,23 @@
+---
+- name: Post tasks - create .kube dir
+  ansible.builtin.file:
+    path: "/home/{{ lookup('ansible.builtin.env', 'REMOTE_USER') }}/.kube/"
+    state: directory
+    owner: "{{ lookup('ansible.builtin.env', 'REMOTE_USER') }}"
+    mode: '0744'
+
+- name: Post tasks - copy k8s config for user
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/home/{{ lookup('ansible.builtin.env', 'REMOTE_USER') }}/.kube/config"
+    owner: "{{ lookup('ansible.builtin.env', 'REMOTE_USER') }}"
+    remote_src: true
+    force: true
+    mode: preserve
+
+- name: Post tasks - k8s autocompleteon
+  shell: |
+    set -o pipefail
+    kubectl completion bash --kubeconfig /etc/kubernetes/admin.conf | tee /etc/bash_completion.d/kubectl > /dev/null
+  register: completeon
+  changed_when: completeon.rc == 0

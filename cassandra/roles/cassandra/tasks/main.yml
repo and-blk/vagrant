@@ -1,0 +1,40 @@
+- name: Cassandra repository
+  ansible.builtin.template:
+    src: cassandra.repo.j2
+    dest: /etc/yum.repos.d/cassandra.repo
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install packages
+  ansible.builtin.yum:
+    name:
+      - java-1.8.0-openjdk
+      - cassandra
+      - vim
+      - bash-completion
+    state: present
+  
+- name: Set Cassandra DC info
+  lineinfile:
+    dest: /etc/cassandra/default.conf/cassandra-rackdc.properties
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^dc=', line: "dc=dc{{ ansible_hostname.split('-')[1] }}" }
+    - { regexp: '^rack=', line: "rack=rack{{ ansible_hostname.split('-')[2] }}" }
+
+- name: Template Cassandra config file
+  ansible.builtin.template:
+    src: cassandra.yaml.j2
+    dest: /etc/cassandra/default.conf/cassandra.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Start Cassandra if not started
+  ansible.builtin.service:
+    name: cassandra
+    state: restarted
+    daemon_reload: true
+    enabled: true

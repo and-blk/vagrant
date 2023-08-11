@@ -1,0 +1,13 @@
+---
+- name: Worker tasks - copy the join sh file
+  copy:
+    src: /tmp/worker-join-command
+    dest: ~/worker-join-command.sh
+    mode: "0777"
+    force: true
+  changed_when: true
+  notify:
+    - Handler - join worker
+
+- name: Flush handlers
+  meta: flush_handlers

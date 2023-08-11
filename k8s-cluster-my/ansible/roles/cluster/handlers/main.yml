@@ -1,0 +1,47 @@
+- name: Handler - restart containerd
+  service:
+    name: containerd
+    daemon_reload: true
+    state: restarted
+    enabled: true
+
+- name: Handler - restart kubelet
+  service:
+    name: kubelet
+    daemon_reload: true
+    state: restarted
+    enabled: true
+
+- name: Handler - join worker
+  command: sh ~/worker-join-command.sh
+  register: worker_join_result
+  changed_when: worker_join_result.rc == 0
+  retries: 3
+  delay: 5
+  until: worker_join_result.rc == 0
+
+- name: Handler - join slave
+  command: sh ~/slave-join-command.sh "{{ ansible_eth1.ipv4.address }}"
+  register: slave_join_result
+  changed_when: slave_join_result.rc == 0
+  retries: 3
+  delay: 5
+  until: slave_join_result.rc == 0
+
+- name: Handler - k8s config variable
+  command: cat /etc/kubernetes/admin.conf
+  register: config
+
+- name: Handler - create .kube dir
+  become: false
+  ansible.builtin.file:
+    path: ~/.kube
+    state: directory
+    mode: '0755'
+
+- name: Handler - k8s config file content
+  become: false
+  copy:
+    content: "{{ config.stdout }}"
+    dest: ~/.kube/config
+    mode: '0660'

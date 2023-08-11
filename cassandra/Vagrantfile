@@ -1,0 +1,47 @@
+IMAGE_NAME = "generic/oracle8"
+PROVIDER = "virtualbox"
+DISK_SIZE="10GB"
+
+# cassandra name note:
+# cassandra-01-02-1 where '01' - datacenter id, '02' - rack id and '1' - node number in cluster
+servers = [
+  { :hostname => "cassandra-01-01-1", :ip => "192.168.166.160" },
+  { :hostname => "cassandra-01-02-2", :ip => "192.168.166.161" },
+  { :hostname => "cassandra-01-03-3", :ip => "192.168.166.162" },
+  { :hostname => "cassandra-02-02-4", :ip => "192.168.166.163" },
+  { :hostname => "cassandra-02-02-5", :ip => "192.168.166.164" },
+  { :hostname => "cassandra-02-02-6", :ip => "192.168.166.165" },
+]
+
+Vagrant.configure("2") do |config|
+    servers.each do |i|
+        config.vm.define i[:hostname] do |node|
+            node.vm.boot_timeout = 300
+            node.vm.box = IMAGE_NAME
+            node.vm.synced_folder ".", "/vagrant", disabled: true
+            node.vm.network "public_network", ip: i[:ip], bridge: "enp37s0", dev: "enp37s0"
+            node.vm.hostname = i[:hostname]
+            node.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
+            node.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
+            node.vm.provision "shell", path: "../common_scripts/user.sh"
+            node.vm.provision "shell", path: "../common_scripts/dns_config.sh"
+            node.vm.provision "shell", path: "../common_scripts/other_configs.sh"
+            node.vm.disk :disk, size: DISK_SIZE, primary: true
+            node.vm.provider PROVIDER do |nodevm|
+              nodevm.memory = 2048
+              nodevm.cpus = 2
+            end
+            if i[:hostname] == "cassandra-02-02-6"
+              node.vm.provision :ansible do |ansible|
+                ansible.playbook = "playbook.yml"
+                ansible.limit = "all"
+                ansible.raw_arguments  = [
+                  "--private-key=../temp/sshkey",
+                  "--become",
+                  "--become-user=root"
+                ]
+              end
+            end
+        end
+    end
+end

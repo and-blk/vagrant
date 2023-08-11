@@ -1,0 +1,21 @@
+---
+- name: Configure k8s infra
+  hosts: all
+  become: true
+  any_errors_fatal: true
+  become_method: sudo
+  become_user: root
+  vars:
+    k8s_vers: "{{ k8s_version.major }}-{{ k8s_version.minor }}"
+    containerd_vers: "{{ containerd_version.major }}-{{ containerd_version.minor }}"
+  pre_tasks:
+    - name: Pre tasks - check if cluster exists
+      command: kubectl cluster-info
+      register: cluster_info
+      failed_when: cluster_info.rc == 0
+      changed_when: cluster_info.rc == 0
+  roles:
+    - tester
+    - cluster
+    # - nfs
+    - postgres

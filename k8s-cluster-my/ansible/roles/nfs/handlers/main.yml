@@ -1,0 +1,9 @@
+---
+- name: Handlers - restart nfs server
+  service:
+    name: nfs-server.service
+    state: restarted
+    enabled: true
+
+- name: Handlers - exportfs reload
+  command: exportfs -rav

@@ -1,0 +1,10 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-client
+  namespace: nfs
+provisioner: {{ docker_repo }}/nfs-subdir-external-provisioner
+reclaimPolicy: Delete
+parameters:
+  archiveOnDelete: "false"
+  pathPattern: ${.PVC.namespace}-${.PVC.name}

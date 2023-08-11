@@ -1,0 +1,17 @@
+---
+- name: Pre_check - check if cluster exists
+  become_user: "{{ lookup('ansible.builtin.env', 'REMOTE_USER') }}"
+  command: kubectl cluster-info
+  register: cluster_info
+  changed_when: cluster_info.rc == 0
+  failed_when: false
+
+- block:
+    - name: Pre_check - log message
+      debug:
+        msg: "Kubernetes cluster already exists! Exit playbook."
+    - name: Pre_check - stop play
+      meta: end_play
+  run_once: true
+  when:
+    - cluster_info.rc == 0

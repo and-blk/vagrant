@@ -1,0 +1,34 @@
+---
+- name: Start service httpd, if not started
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: false
+  ignore_errors: true
+
+- name: Pre_check k8s
+  include_tasks: k8s.yml
+  when:
+    - 'inventory_hostname in groups["master"]'
+
+- name: Pre_check postgres
+  include_tasks: postgres.yml
+  when:
+    - 'inventory_hostname in groups["postgres"]'
+
+- name: Pre_check - assert if OS distribution is ok
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "OracleLinux"
+    fail_msg: "This playbook supports only OracleLinux OS distribution"
+    success_msg: "OS distribution is OK"
+
+- name: Pre_check - assert if OS version is ok
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution_major_version == "8"
+    fail_msg: "This playbook supports only 8th version"
+    success_msg: "OS version is OK"
+  # when:
+  #   - 'inventory_hostname not in groups["nfs"]'
+  # NFS role is disabled at the moment 

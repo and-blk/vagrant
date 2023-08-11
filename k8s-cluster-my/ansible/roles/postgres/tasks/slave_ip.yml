@@ -1,0 +1,7 @@
+---
+- name: Slave IP - set slave IP fact
+  set_fact:
+    slave_ip: "{{ ansible_eth1.ipv4.address }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ play_hosts }}"
+  run_once: true

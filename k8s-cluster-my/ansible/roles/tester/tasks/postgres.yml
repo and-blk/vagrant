@@ -1,0 +1,22 @@
+---
+- name: Pre_check - find out if PostgreSQL is already initialized
+  ansible.builtin.stat:
+    path: /var/lib/pgsql/14/data/pg_hba.conf
+  register: postgres_data
+
+- name: Pre_check - set postgresql fact
+  set_fact:
+    postgresql_status: "{{ postgres_data.stat.exists }}"
+  run_once: true
+  delegate_to: "{{ item }}"
+  with_items: "{{ play_hosts }}"
+
+# - block:
+#     - name: Pre_check - log message
+#       debug:
+#         msg: "Postgres cluster already exists! Exit playbook."
+#     - name: Pre_check - stop play
+#       meta: end_play
+#   run_once: true
+#   when:
+#     - postgres_data.stat.exists

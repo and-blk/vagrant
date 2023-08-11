@@ -1,0 +1,34 @@
+IMAGE_NAME = "generic/oracle8"
+PROVIDER = "virtualbox"
+DISK_SIZE="10GB"
+
+servers = [
+  { :hostname => "control-plane-01", :ip => "192.168.166.150" },
+  { :hostname => "control-plane-02", :ip => "192.168.166.151" },
+  { :hostname => "control-plane-03", :ip => "192.168.166.152" },
+  { :hostname => "worker-01", :ip => "192.168.166.153" },
+  { :hostname => "worker-02", :ip => "192.168.166.154" },
+  { :hostname => "worker-03", :ip => "192.168.166.155" }
+]
+
+Vagrant.configure("2") do |config|
+    servers.each do |i|
+        config.vm.define i[:hostname] do |node|
+            node.vm.boot_timeout = 300
+            node.vm.box = IMAGE_NAME
+            node.vm.synced_folder ".", "/vagrant", disabled: true
+            node.vm.network "public_network", ip: i[:ip], bridge: "enp37s0", dev: "enp37s0"
+            node.vm.hostname = i[:hostname]
+            node.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
+            node.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
+            node.vm.provision "shell", path: "../common_scripts/user.sh"
+            node.vm.provision "shell", path: "../common_scripts/dns_config.sh"
+            node.vm.provision "shell", path: "../common_scripts/other_configs.sh"
+            node.vm.disk :disk, size: DISK_SIZE, primary: true
+            node.vm.provider PROVIDER do |nodevm|
+              nodevm.memory = 4096
+              nodevm.cpus = 2
+            end
+        end
+    end
+end

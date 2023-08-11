@@ -1,0 +1,70 @@
+---
+- name: Master tasks - init config file
+  template:
+    src: init-config.yml.j2
+    dest: /tmp/init-config.yml
+    mode: '0664'
+    owner: root
+
+- name: Master tasks - initialize the k8s cluster using kubeadm
+  command: kubeadm init --config /tmp/init-config.yml
+  register: kubeadm
+  changed_when: kubeadm.rc == 0
+  notify:
+    - Handler - k8s config variable
+    - Handler - create .kube dir
+    - Handler - k8s config file content
+
+- name: Master tasks - stop play as init failed
+  ansible.builtin.fail:
+    msg: Couldn't create k8s cluster with kubeadm
+  when: kubeadm.rc != 0
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- name: Master tasks - wait for vip
+  ansible.builtin.wait_for:
+    host: "{{ ansible_eth1.ipv4.address }}"
+    port: 6443
+    delay: 10
+
+- name: Master tasks - template calico
+  template:
+    src: calico.yml.j2
+    dest: ./calico.yml
+    mode: '0644'
+    owner: root
+
+- name: Master tasks - install calico pod network
+  become: false
+  command: kubectl apply -f ./calico.yml
+  register: calico
+  changed_when: calico.rc == 0
+
+- name: Master tasks - generate slave join cert
+  command: "kubeadm init phase upload-certs --upload-certs"
+  register: slave_certificate
+  changed_when: slave_certificate.rc == 0
+
+- name: Master tasks - generate worker join command
+  command: kubeadm token create --print-join-command
+  register: worker_join_command
+  changed_when: worker_join_command.rc == 0
+
+- name: Master tasks - copy worker join command to sh file
+  become: false
+  delegate_to: localhost
+  copy:
+    content: "{{ worker_join_command.stdout_lines[0] }}"
+    dest: /tmp/worker-join-command
+    mode: '0700'
+
+- name: Master tasks - copy slave join command to sh file
+  become: false
+  delegate_to: localhost
+  copy:
+    content: |
+      {{ worker_join_command.stdout_lines[0] }} --control-plane --certificate-key {{ slave_certificate.stdout_lines[-1] }} --apiserver-advertise-address $1
+    dest: /tmp/slave-join-command
+    mode: '0700'

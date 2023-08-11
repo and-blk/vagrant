@@ -1,0 +1,16 @@
+---
+- name: Slave tasks - copy the join sh file
+  copy:
+    src: /tmp/slave-join-command
+    dest: ~/slave-join-command.sh
+    mode: "0777"
+    force: true
+  changed_when: true
+  notify:
+    - Handler - join slave
+    - Handler - k8s config variable
+    - Handler - create .kube dir
+    - Handler - k8s config file content
+
+- name: Flush handlers
+  meta: flush_handlers

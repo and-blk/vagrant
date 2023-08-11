@@ -1,0 +1,19 @@
+---
+docker_repo_origin: "registry.hub.docker.com"
+docker_repo: "k8s.gcr.io"
+postgres_repo_proxy: "https://download.postgresql.org/pub/repos/yum/"
+network_cidr: "192.168.100.0/24"
+k8s_version:
+  major: 1.24.7
+  minor: 0
+containerd_version:
+  major: 1.6.6
+  minor: "3.1.el8"
+postgres:
+  listen_addresses: "'*'"
+  port: 5432
+  max_connections: 100
+  password: "{{ lookup('ansible.builtin.env', 'var_postgres_admin_password') }}"
+  replication:
+    password: "{{ lookup('ansible.builtin.env', 'var_postgres_admin_replication_password') }}"
+    username: "{{ lookup('ansible.builtin.env', 'var_postgres_admin_replication_username') }}"

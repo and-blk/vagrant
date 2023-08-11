@@ -1,0 +1,7 @@
+---
+- name: Handlers - restart patroni
+  service:
+    name: patroni
+    state: restarted
+    daemon_reload: true
+    enabled: true

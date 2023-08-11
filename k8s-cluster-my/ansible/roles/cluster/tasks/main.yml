@@ -1,0 +1,34 @@
+---
+- name: preparation tasks
+  include_tasks: pre_steps.yml
+  when:
+    - 'inventory_hostname not in groups["postgres"]'
+
+- name: master tasks
+  include_tasks: master.yml
+  when:
+    - 'inventory_hostname in groups["master"]'
+    - '"master" in host_role'
+
+- name: slave tasks
+  include_tasks: slave.yml
+  when:
+    - 'inventory_hostname in groups["master"]'
+    - '"slave" in host_role'
+
+- name: worker tasks
+  include_tasks: worker.yml
+  when:
+    - 'inventory_hostname in groups["worker"]'
+    - '"worker" in host_role'
+
+- name: post tasks
+  include_tasks: post_steps.yml
+  when:
+    - 'inventory_hostname in groups["master"]'
+
+- name: labels tasks
+  include_tasks: labels.yml
+  when:
+    - 'inventory_hostname in groups["master"]'
+    - '"master" in host_role'

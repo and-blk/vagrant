@@ -1,0 +1,20 @@
+---
+- name: Install nfs - build dir
+  file:
+    path: /tmp/build/
+    state: directory
+    owner: root
+    mode: '0666'
+
+- name: Install nfs - template nfs provisioner yamlse
+  template:
+    src: "{{ item }}"
+    dest: "/tmp/build/{{ item | basename | regex_replace('.j2$', '') }}"
+    mode: '0644'
+  with_fileglob:
+    - ../templates/*.j2
+
+- name: Install nfs - deploy nfs provisioner
+  command: kubectl apply -k /tmp/build/ --kubeconfig=/etc/kubernetes/admin.conf
+  register: k8s_kustom
+  changed_when: k8s_kustom.rc == 0

@@ -1,0 +1,18 @@
+---
+- name: pre tasks
+  include_tasks: pre_steps.yml
+  when:
+    - 'inventory_hostname in groups["postgres"]'
+    - not postgresql_status
+
+- name: configure tasks
+  include_tasks: configure.yml
+  when:
+    - 'inventory_hostname in groups["postgres"]'
+    - not postgresql_status
+
+- name: ssh access tasks
+  include_tasks: ssh_access.yml
+  when:
+    - 'inventory_hostname in groups["postgres"]'
+    - not postgresql_status

@@ -1,0 +1,7 @@
+---
+- name: Master IP - set master IP fact
+  set_fact:
+    master_ip: "{{ ansible_eth1.ipv4.address }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ play_hosts }}"
+  run_once: true

@@ -1,0 +1,31 @@
+# Gitlab is configured locally on the server, vagrant will be used only for non-persistent services
+# IMAGE_NAME = "generic/ubuntu2004"
+# CLIENT_NODE_NUMBER = 1
+# PROVIDER = "virtualbox"
+# DISK_SIZE = "40GB"
+
+# Vagrant.configure("2") do |config|
+#     # config.ssh.insert_key = false
+
+#     config.vm.provider PROVIDER do |v|
+#         v.memory = 4096
+#         v.cpus = 2
+#         v.gui = false
+#     end
+
+#     config.vm.define "gitlab" do |gitlab|
+#         GITLAB_IP = "192.168.166.199"
+#         GITLAB_URL = "gitlab.local.com"
+#         gitlab.vm.boot_timeout = 300
+#         gitlab.vm.box = IMAGE_NAME
+#         gitlab.vm.network "public_network", ip: GITLAB_IP, bridge: "enp37s0"
+#         gitlab.vm.hostname = "gitlab"
+#         gitlab.vm.synced_folder ".", "/vagrant", disabled: true
+#         gitlab.vm.provision "file", source: "../temp/sshkey.pub", destination: "./sshkey.pub"
+#         gitlab.vm.provision "file", source: "../temp/sshkey", destination: "./sshkey"
+#         gitlab.vm.provision "shell", path: "configure_gitlab.sh", args: [GITLAB_IP, GITLAB_URL]
+# 	    gitlab.vm.provision "shell", path: "../common_scripts/user.sh"
+#         gitlab.vm.provision "shell", path: "../common_scripts/dns_config.sh"
+#         gitlab.vm.disk :disk, size: DISK_SIZE, primary: true
+#     end
+# end

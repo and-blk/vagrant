@@ -1,0 +1,20 @@
+---
+- name: Labels tasks - workers list
+  become: false
+  command: kubectl get nodes -l 'node-role.kubernetes.io/control-plane!=' -o name
+  register: workers
+  changed_when: false
+  retries: 3
+  delay: 5
+  until: workers.rc == 0
+
+- name: Lables tasks - assign role workers to {{ item }}
+  become: false
+  command: "kubectl label {{ item }} node-role.kubernetes.io/worker=worker"
+  with_items:
+    - "{{ workers.stdout_lines }}"
+  register: label_result
+  changed_when: label_result.rc == 0
+  retries: 3
+  delay: 5
+  until: label_result.rc == 0

@@ -1,0 +1,14 @@
+---
+- name: Install nfs server
+  include_tasks: install_nfs.yml
+  when:
+    - 'inventory_hostname in groups["nfs"]'
+
+- name: Install nfs utils
+  include_tasks: install_nfsutils.yml
+
+- name: Install nfs storage class
+  include_tasks: storage_class.yml
+  when:
+    - 'inventory_hostname in groups["master"]'
+    - '"master" in host_role'

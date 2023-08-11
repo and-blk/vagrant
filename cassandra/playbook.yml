@@ -1,0 +1,9 @@
+- name: Configure cassandra cluster
+  hosts: all
+  vars:
+    REPO_GPG_CHECK: 0
+    CLUSTER_NAME: local_and_cluster
+    SEEDS: "192.168.166.160:7000,192.168.166.161:7000,192.168.166.162:7000"
+    SNITCH: GossipingPropertyFileSnitch
+  roles:
+    - { role: roles/cassandra }

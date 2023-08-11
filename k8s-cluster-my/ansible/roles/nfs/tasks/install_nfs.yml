@@ -1,0 +1,35 @@
+---
+- name: Install nfs - install packages
+  yum:
+    state: latest
+    name: nfs-utils
+  notify:
+    - Handlers - restart nfs server
+  tags:
+    - skip_ansible_lint
+
+- name: Install nfs - create data dir
+  file:
+    path: "{{ nfs_server_path }}"
+    state: directory
+    mode: '0777'
+    owner: root
+    group: root
+
+- name: Install nfs - define export path for conf
+  set_fact:
+    export_to: "{{ nfs_server_path }}"
+
+- name: Install nfs - collect hostnames for exports
+  set_fact:
+    export_to: "{{ export_to + ' ' + item }}(rw,sync,no_all_squash,no_root_squash)"
+  with_items: "{{ groups['all'] }}"
+
+- name: Install nfs - manage exportfs config
+  blockinfile:
+    path: /etc/exports
+    block: "{{ export_to }}"
+    create: true
+    mode: '0644'
+  notify:
+    - Handlers - exportfs reload

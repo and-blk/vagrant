@@ -1,0 +1,147 @@
+---
+- name: Pre_steps - stop firewalld
+  service:
+    name: firewalld
+    state: stopped
+    enabled: false
+
+- name: Pre_steps - delete unused repositories
+  ansible.builtin.yum_repository:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - elastic_7
+    - docker
+  failed_when: false
+
+- name: Pre_steps - add docker repository
+  ansible.builtin.yum_repository:
+    baseurl: https://download.docker.com/linux/centos/8/x86_64/stable/
+    state: present
+    description: Kubernetes
+    name: docker_repo
+    gpgcheck: false
+
+- name: Pre_steps - add k8s repository
+  ansible.builtin.yum_repository:
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    state: present
+    description: Kubernetes
+    name: k8s_repo
+    gpgcheck: false
+
+- name: Pre_steps - install k8s required packages
+  ansible.builtin.yum:
+    name:
+      - ca-certificates
+      - curl
+      - containerd.io-{{ containerd_vers }}
+      - python3-pip
+      - iproute-tc
+      - bash-completion
+    state: latest
+    update_cache: true
+  tags:
+    - skip_ansible_lint
+
+- name: Pre_steps - configure crictl
+  copy:
+    dest: "/etc/crictl.yaml"
+    mode: "0644"
+    force: true
+    content: |
+      runtime-endpoint: unix:///run/containerd/containerd.sock
+      image-endpoint: unix:///run/containerd/containerd.sock
+      timeout: 2
+
+- name: Pre_steps - containerd to use mts sandbox image
+  copy:
+    mode: "0644"
+    force: true
+    dest: /etc/containerd/config.toml
+    content: |
+      [plugins]
+        [plugins.cri]
+          sandbox_image = "{{ docker_repo }}/pause:3.7"
+  notify:
+    - Handler - restart containerd
+
+- name: Pre_steps - pip3 install required libraries
+  ansible.builtin.pip:
+    name:
+      - kubernetes
+      - docker==5.0.3
+
+- name: Pre_steps - remove swapfile from /etc/fstab
+  mount:
+    name: "{{ item }}"
+    fstype: swap
+    state: absent
+  with_items:
+    - swap
+    - none
+
+- name: Pre_steps - disable swap
+  command: swapoff -a  # noqa: command-instead-of-module
+  when: ansible_swaptotal_mb > 0
+
+- name: Pre_steps - containerd kernel modules
+  blockinfile:
+    create: true
+    mode: "0644"
+    path: /etc/modules-load.d/containerd.conf
+    block: |
+      overlay
+      br_netfilter
+
+- name: Pre_steps - load kernel "{{ item }}" modules
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - overlay
+    - br_netfilter
+
+- name: Pre_steps - config sysctl for "{{ item.name }}"
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    reload: true
+  with_items:
+    - {name: "net.ipv4.ip_forward", value: "1"}
+    - {name: "net.bridge.bridge-nf-call-iptables", value: "1"}
+    - {name: "net.bridge.bridge-nf-call-ip6tables", value: "1"}
+    - {name: "vm.max_map_count", value: "262144"}
+
+- name: Pre_steps - install k8s rpms
+  ansible.builtin.yum:
+    name: "{{ packages }}"
+    state: present
+    update_cache: true
+  vars:
+    packages:
+      - kubelet-{{ k8s_vers }}
+      - kubeadm-{{ k8s_vers }}
+      - kubectl-{{ k8s_vers }}
+
+- name: Pre_steps - kubelet node-ip
+  blockinfile:
+    path: /etc/sysconfig/kubelet
+    block: KUBELET_EXTRA_ARGS=--node-ip={{ ansible_eth1.ipv4.address }} --node-status-update-frequency=5s
+    create: true
+    mode: "0644"
+  notify:
+    - Handler - restart kubelet
+
+- name: Pre_steps - create k8s dirs
+  ansible.builtin.file:
+    path: /etc/kubernetes/manifests
+    state: directory
+    mode: '0755'
+  when:
+    - '"control-plane" in host_role'
+
+- name: Flush handlers
+  meta: flush_handlers

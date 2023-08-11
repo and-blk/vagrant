@@ -1,0 +1,4 @@
+temp/*
+.vagrant/
+temp/
+*.log
