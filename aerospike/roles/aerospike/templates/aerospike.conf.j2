@@ -1,0 +1,62 @@
+# Aerospike database configuration file
+
+# Server configuration
+service {
+	proto-fd-max 15000
+    user root
+    group root
+    node-id {{ ansible_hostname.split('-')[1] }}
+}
+
+network {
+	service {
+		address {{ ansible_eth1.ipv4.address }}
+		port 3000
+	}
+
+    heartbeat {
+        mode mesh
+        port 3002
+{% for node in CLUSTER_NODES %}
+        mesh-seed-address-port {{ node }} 3002
+{% endfor %}
+        # Add more nodes if needed
+        interval 250                               # Interval between heartbeats
+        timeout 10                                 # Heartbeat timeout
+    }
+
+    fabric {
+        port 3001
+        address {{ ansible_eth1.ipv4.address }}
+    }
+
+    info {
+        port 3003
+        address {{ ansible_eth1.ipv4.address }}
+    }
+}
+
+logging {
+    # Aerospike Log Level (default is "info").
+    # There are four log levels: "debug", "info", "warning", "error".
+    console {
+      context any info
+    }
+}
+
+# Namespace configuration (replace "test" with your namespace name)
+namespace test {
+    replication-factor 1                     # Number of copies of a record in the cluster (including the original)
+    memory-size 1G                            # Amount of memory allocated for the namespace
+
+    #storage-engine memory            # Choose the storage engine (SSD or memory-optimized)
+    storage-engine device {         # Configure the storage-engine to use
+                                    # persistence. Maximum size is 2 TiB
+        file /opt/aerospike/data.dat  # Location of data file on server.
+        # file /opt/aerospike/ANOTHER # (optional) Location of data file on server.
+        filesize 3G               # Max size of each file in GiB.
+        data-in-memory true             # Indicates that all data should also be
+                                        # in memory.
+    }
+
+}

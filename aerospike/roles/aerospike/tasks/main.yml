@@ -1,0 +1,53 @@
+- name: Download aerospike installation files
+  ansible.builtin.get_url:
+    url: https://download.aerospike.com/artifacts/aerospike-server-community/{{ AS_VERSION_PATH_MAJOR }}/{{ AS_VERSION_PATH_MINOR }}.tgz
+    dest: /tmp/aerospike.tgz
+    mode: '0440'
+
+- name: Unarchive aerospike files
+  ansible.builtin.unarchive:
+    src: /tmp/aerospike.tgz
+    dest: ./
+    remote_src: true
+
+- name: Find rpms
+  ansible.builtin.find:
+    paths: ./{{ AS_VERSION_PATH_MINOR }}
+    patterns: '*.rpm'
+  register: find_result
+
+- name: Install rpm package
+  ansible.builtin.yum:
+    name: "{{ item.path }}"
+    state: present
+  with_items:
+    - "{{ find_result.files }}"
+
+- name: Template a file to aerospike.conf
+  ansible.builtin.template:
+    src: aerospike.conf.j2
+    dest: /etc/aerospike/aerospike.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create an aerospike directory if it does not exist
+  ansible.builtin.file:
+    path: /opt/aerospike
+    state: directory
+    mode: '0755'
+    group: 'aerospike'
+    owner: 'aerospike'
+
+# - name: Change max cluster size parameter
+#   lineinfile:
+#     dest: /etc/aerospike/features.conf
+#     regexp: "{{ item.regexp }}"
+#     line: "{{ item.line }}"
+#   loop:
+#     - { regexp: '^asdb-cluster-nodes-limit', line: "asdb-cluster-nodes-limit         5" }
+
+- name: Start service aerospike, if not started
+  ansible.builtin.service:
+    name: aerospike
+    state: restarted
