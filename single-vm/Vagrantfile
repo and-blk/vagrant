@@ -3,7 +3,7 @@ IMAGE_NAME = "generic/ubuntu2004"
 DISK_SIZE="10GB"
 
 servers = [
-  { :hostname => "test", :ip => "192.168.166.160" , :cpu => 2, :memory => 2048 }
+  { :hostname => "test", :ip => "192.168.166.190" , :cpu => 2, :memory => 2048 }
 ]
 
 Vagrant.configure("2") do |config|
